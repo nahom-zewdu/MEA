@@ -13,7 +13,15 @@
     "call": "Call",
     "noServices": "No services available.",
     "selectEmergency": "Select Emergency Service",
-    "nearestService": "Nearest Service"
+    "nearestService": "Nearest Service",
+    "smartEmergencyMode": "Smart Emergency Mode",
+    "walking": "walking",
+    "driving": "drive",
+    "offline": "Offline Mode",
+    "shareLocation": "Share My Location",
+    "locationCopied": "Location copied to clipboard",
+    "top3Services": "Top 3 Services",
+    "eta": "ETA"
   },
   "am": {
     "title": "የአስቸኳይ እርዳታ አገልግሎት",
@@ -29,6 +37,14 @@
     "call": "ይደውሉ",
     "noServices": "ምንም አገልግሎት አይገኝም።",
     "selectEmergency": "የአደጋ አገልግሎት ይምረጡ",
-    "nearestService": "የቅርብ አገልግሎት"
+    "nearestService": "የቅርብ አገልግሎት",
+    "smartEmergencyMode": "ዘመናዊ የአደጋ ሁኔታ",
+    "walking": "እግር",
+    "driving": "መኪና",
+    "offline": "የመስመር ውጭ ሁኔታ",
+    "shareLocation": "አካባቢዬን አጋራ",
+    "locationCopied": "አካባቢ ወደ ክሊፕቦርድ ተገልብጧል",
+    "top3Services": "የመጀመሪያ 3 አገልግሎቶች",
+    "eta": "የመድረሻ ጊዜ"
   }
 }
