@@ -404,3 +404,24 @@ body {
   .cards { padding-bottom: 24px; }
   .share-location-btn { bottom: 20px; }
 }
+
+.map-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(15, 23, 40, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 8px;
+  box-shadow: var(--shadow);
+  z-index: 1100;
+}
+.map-controls select {
+  background: #162036;
+  color: #f5f5f5;
+  border: 1px solid #20304a;
+  border-radius: 8px;
+  padding: 6px 8px;
+  min-height: 36px;
+  font-size: 14px;
+}
