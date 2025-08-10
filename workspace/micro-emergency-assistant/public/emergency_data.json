@@ -1,0 +1,11 @@
+[
+  { "name": "Addis Ababa Police Commission", "type": "police", "phone": "+251111260033", "lat": 9.015035, "lon": 38.752216 },
+  { "name": "Bole Police Station", "type": "police", "phone": "+251116293043", "lat": 8.993121, "lon": 38.788735 },
+  { "name": "Addis Ababa Fire & Emergency Control", "type": "fire", "phone": "+251111551149", "lat": 9.016521, "lon": 38.746894 },
+  { "name": "Kazanchis Fire Station", "type": "fire", "phone": "+251111552233", "lat": 9.019012, "lon": 38.761298 },
+  { "name": "Red Cross Ambulance Service", "type": "ambulance", "phone": "+251911235436", "lat": 9.014542, "lon": 38.752001 },
+  { "name": "St. Paul’s Hospital", "type": "hospital", "phone": "+251111276011", "lat": 9.039354, "lon": 38.757124 },
+  { "name": "Black Lion Hospital", "type": "hospital", "phone": "+251111551121", "lat": 9.013645, "lon": 38.746971 },
+  { "name": "Medico Pharmacy", "type": "pharmacy", "phone": "+251911121314", "lat": 9.018821, "lon": 38.754498 },
+  { "name": "Bole Medhanialem Pharmacy", "type": "pharmacy", "phone": "+251911989899", "lat": 8.994213, "lon": 38.788432 }
+]
