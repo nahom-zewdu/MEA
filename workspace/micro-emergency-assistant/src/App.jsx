@@ -3,12 +3,12 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 
 const CATEGORIES = [
-  { key: 'all', label: 'All', emoji: '⭐' },
-  { key: 'police', label: 'Police', emoji: '👮' },
-  { key: 'ambulance', label: 'Ambulance', emoji: '🚑' },
-  { key: 'fire', label: 'Fire', emoji: '🚒' },
-  { key: 'hospital', label: 'Hospital', emoji: '🏥' },
-  { key: 'pharmacy', label: 'Pharmacy', emoji: '💊' },
+  { key: 'all', label: 'all', emoji: '⭐', icon: '⭐' },
+  { key: 'police', label: 'police', emoji: '🛡️', icon: '🛡️' },
+  { key: 'ambulance', label: 'ambulance', emoji: '🚑', icon: '➕' },
+  { key: 'fire', label: 'fire', emoji: '🚒', icon: '🔥' },
+  { key: 'hospital', label: 'hospital', emoji: '🏥', icon: '🏥' },
+  { key: 'pharmacy', label: 'pharmacy', emoji: '💊', icon: '💊' },
 ]
 
 const ADDIS_FALLBACK = { lat: 9.010793, lon: 38.761253 }
@@ -26,7 +26,7 @@ function toDivIcon(htmlClass, content) {
 const userIcon = toDivIcon('user', '•')
 function serviceIconFor(type) {
   const match = CATEGORIES.find(c => c.key === type)
-  return toDivIcon('service', match?.emoji ?? '📍')
+  return toDivIcon(type, match?.icon ?? '📍')
 }
 
 function haversineKm(a, b) {
@@ -74,6 +74,17 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [data, setData] = useState([])
   const [error, setError] = useState('')
+  const [language, setLanguage] = useState('en')
+  const [translations, setTranslations] = useState({})
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false)
+
+  // Load translations
+  useEffect(() => {
+    fetch('/translations.json')
+      .then(r => r.json())
+      .then(setTranslations)
+      .catch(() => console.error('Failed to load translations'))
+  }, [])
 
   // Load data once
   useEffect(() => {
@@ -120,19 +131,40 @@ export default function App() {
     ? Object.keys(nearestByCategory)
     : (nearestByCategory[selected] ? [selected] : [])
 
+  const t = translations[language] || translations.en || {}
+
+  const handleEmergencyCall = (category) => {
+    const nearest = nearestByCategory[category]
+    if (nearest) {
+      window.location.href = `tel:${nearest.phone}`
+    }
+    setShowEmergencyModal(false)
+  }
+
   return (
     <div className="app">
       <div className="header">
-        <h1 className="title">Micro Emergency Assistant</h1>
-        <div className="filters">
-          {CATEGORIES.map(c => (
-            <button
-              key={c.key}
-              className={`filter-btn ${selected === c.key ? 'active' : ''}`}
-              onClick={() => setSelected(c.key)}
-            >{c.emoji} {c.label}</button>
-          ))}
+        <div className="header-left">
+          <h1 className="title">{t.title || 'Micro Emergency Assistant'}</h1>
+          <div className="filters">
+            {CATEGORIES.map(c => (
+              <button
+                key={c.key}
+                className={`filter-btn ${selected === c.key ? 'active' : ''}`}
+                onClick={() => setSelected(c.key)}
+              >
+                <span>{c.emoji}</span>
+                <span>{t[c.label] || c.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
+        <button 
+          className="language-toggle"
+          onClick={() => setLanguage(lang => lang === 'en' ? 'am' : 'en')}
+        >
+          {language === 'en' ? 'አማርኛ' : 'English'}
+        </button>
       </div>
 
       <div className="main">
@@ -146,7 +178,7 @@ export default function App() {
 
             {user && (
               <Marker position={[user.lat, user.lon]} icon={userIcon}>
-                <Popup>Your Location</Popup>
+                <Popup>{t.yourLocation || 'Your Location'}</Popup>
               </Marker>
             )}
 
@@ -158,39 +190,89 @@ export default function App() {
                   <Popup>
                     <div>
                       <strong>{item.name}</strong>
-                      <div>{item.type.toUpperCase()}</div>
-                      <div>{(item.distanceKm ?? haversineKm(mapCenter, { lat: item.lat, lon: item.lon })).toFixed(1)} km away</div>
-                      <div><a href={`tel:${item.phone}`}>Call {item.phone}</a></div>
+                      <div className={`category-badge ${item.type}`}>
+                        <span>{CATEGORIES.find(c => c.key === item.type)?.icon}</span>
+                        <span>{t[item.type] || item.type.toUpperCase()}</span>
+                      </div>
+                      <div>{(item.distanceKm ?? haversineKm(mapCenter, { lat: item.lat, lon: item.lon })).toFixed(1)} {t.kmAway || 'km away'}</div>
+                      <div><a href={`tel:${item.phone}`}>{t.call || 'Call'} {item.phone}</a></div>
                     </div>
                   </Popup>
                 </Marker>
               )
             })}
           </MapContainer>
+          
+          <button 
+            className="emergency-btn"
+            onClick={() => setShowEmergencyModal(true)}
+          >
+            {t.emergency || 'EMERGENCY'}
+          </button>
         </div>
 
         <div className="list">
           <div className="cards">
             {visibleKeys.length === 0 && (
-              <div className="card"><p className="meta">No services available.</p></div>
+              <div className="card"><p className="meta">{t.noServices || 'No services available.'}</p></div>
             )}
             {visibleKeys.map(key => {
               const item = nearestByCategory[key]
               if (!item) return null
               const distance = (item.distanceKm ?? haversineKm(mapCenter, { lat: item.lat, lon: item.lon })).toFixed(1)
+              const category = CATEGORIES.find(c => c.key === item.type)
               return (
                 <div className="card" key={`card-${key}`}>
                   <div>
-                    <h3>{serviceIconFor(item.type).options.html.replace(/<[^>]+>/g, '')} {item.name}</h3>
-                    <p className="meta">{item.type.toUpperCase()} • {distance} km away • {item.phone}</p>
+                    <h3>
+                      <span className={`category-badge ${item.type}`}>
+                        <span>{category?.icon}</span>
+                        <span>{t[item.type] || item.type.toUpperCase()}</span>
+                      </span>
+                      {item.name}
+                    </h3>
+                    <p className="meta">{distance} {t.kmAway || 'km away'} • {item.phone}</p>
                   </div>
-                  <a className="call-btn" href={`tel:${item.phone}`}>Call</a>
+                  <a className="call-btn" href={`tel:${item.phone}`}>{t.call || 'Call'}</a>
                 </div>
               )
             })}
           </div>
         </div>
       </div>
+
+      {showEmergencyModal && (
+        <div className="modal-overlay" onClick={() => setShowEmergencyModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>{t.selectEmergency || 'Select Emergency Service'}</h2>
+            <div className="emergency-options">
+              {['police', 'ambulance', 'fire', 'hospital', 'pharmacy'].map(category => {
+                const nearest = nearestByCategory[category]
+                const categoryInfo = CATEGORIES.find(c => c.key === category)
+                return (
+                  <div 
+                    key={category}
+                    className="emergency-option"
+                    onClick={() => handleEmergencyCall(category)}
+                  >
+                    <div className={`emergency-option-icon ${category}`}>
+                      {categoryInfo?.icon}
+                    </div>
+                    <div className="emergency-option-text">
+                      {t[category] || category}
+                      {nearest && (
+                        <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '4px' }}>
+                          {nearest.name} • {(nearest.distanceKm).toFixed(1)} {t.kmAway || 'km away'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && <div style={{ padding: 12, color: '#b42318' }}>{error}</div>}
     </div>
