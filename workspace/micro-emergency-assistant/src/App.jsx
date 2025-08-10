@@ -229,13 +229,6 @@ export default function App() {
 
       <button className="share-location-btn" onClick={() => setShowShareModal(true)} aria-label={t.shareLocation || 'Share My Location'}>📍 {t.shareLocation || 'Share My Location'}</button>
 
-      <div className="bottom-nav" role="navigation" aria-label="Bottom navigation">
-        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Map">🗺️<span>Map</span></button>
-        <button onClick={() => document.querySelector('.list')?.scrollIntoView({ behavior: 'smooth' })} aria-label="List">📋<span>List</span></button>
-        <button onClick={() => setShowShareModal(true)} aria-label="Share">🔗<span>Share</span></button>
-        <button onClick={() => alert('Settings coming soon')} aria-label="Settings">⚙️<span>Settings</span></button>
-      </div>
-
       {showEmergencyModal && (
         <div className="modal-overlay" onClick={() => setShowEmergencyModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
