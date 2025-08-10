@@ -2,8 +2,20 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 
-const DARK_TILE = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const DARK_ATTRIB = '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; OpenStreetMap contributors'
+const MAP_TILES = {
+  light: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attrib: '&copy; OpenStreetMap contributors'
+  },
+  carto: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attrib: '&copy; CARTO & OpenStreetMap contributors'
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attrib: '&copy; CARTO & OpenStreetMap contributors'
+  }
+}
 
 const CATEGORIES = [
   { key: 'all', label: 'all', emoji: '⭐', icon: '⭐' },
@@ -17,20 +29,11 @@ const CATEGORIES = [
 const ADDIS_FALLBACK = { lat: 9.010793, lon: 38.761253 }
 
 function toDivIcon(htmlClass, content) {
-  return L.divIcon({
-    className: '',
-    html: `<div class="marker ${htmlClass}">${content}</div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 30],
-    popupAnchor: [0, -28],
-  })
+  return L.divIcon({ className: '', html: `<div class="marker ${htmlClass}">${content}</div>`, iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28] })
 }
 
 const userIcon = toDivIcon('user', '•')
-function serviceIconFor(type) {
-  const match = CATEGORIES.find(c => c.key === type)
-  return toDivIcon(type, match?.icon ?? '📍')
-}
+function serviceIconFor(type) { const match = CATEGORIES.find(c => c.key === type); return toDivIcon(type, match?.icon ?? '📍') }
 
 function haversineKm(a, b) {
   const R = 6371
@@ -38,17 +41,11 @@ function haversineKm(a, b) {
   const dLon = ((b.lon - a.lon) * Math.PI) / 180
   const lat1 = (a.lat * Math.PI) / 180
   const lat2 = (b.lat * Math.PI) / 180
-  const sinDLat = Math.sin(dLat / 2)
-  const sinDLon = Math.sin(dLon / 2)
-  const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon
-  const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
-  return R * c
+  const h = Math.sin(dLat/2)**2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2)**2
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1-h))
 }
 
-function calculateETA(distanceKm, mode = 'driving') {
-  const speed = mode === 'walking' ? 5 : 40
-  return Math.round((distanceKm / speed) * 60)
-}
+function calculateETA(distanceKm, mode = 'driving') { const speed = mode === 'walking' ? 5 : 40; return Math.round((distanceKm / speed) * 60) }
 
 function findNearest(user, type, data, count = 1) {
   const filtered = data.filter(d => d.type === type)
@@ -58,11 +55,7 @@ function findNearest(user, type, data, count = 1) {
   return count === 1 ? withDistance[0] : withDistance.slice(0, count)
 }
 
-function RecenterOnUser({ center }) {
-  const map = useMap()
-  useEffect(() => { if (center) map.setView([center.lat, center.lon], map.getZoom() || 13) }, [center, map])
-  return null
-}
+function RecenterOnUser({ center }) { const map = useMap(); useEffect(() => { if (center) map.setView([center.lat, center.lon], map.getZoom() || 13) }, [center, map]); return null }
 
 export default function App() {
   const [selected, setSelected] = useState('all')
@@ -77,10 +70,10 @@ export default function App() {
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [showShareModal, setShowShareModal] = useState(false)
+  const [mapTheme, setMapTheme] = useState('light')
 
   useEffect(() => { fetch('/translations.json').then(r => r.json()).then(setTranslations).catch(() => {}) }, [])
   useEffect(() => { fetch('/emergency_data.json').then(r => r.json()).then(setData).catch(() => setError('Failed to load emergency data')) }, [])
-
   useEffect(() => {
     if (!('geolocation' in navigator)) { setUser(ADDIS_FALLBACK); return }
     navigator.geolocation.getCurrentPosition(
@@ -89,23 +82,13 @@ export default function App() {
       { enableHighAccuracy: true, maximumAge: 10_000, timeout: 10_000 }
     )
   }, [])
-
-  useEffect(() => {
-    const on = () => setIsOffline(false), off = () => setIsOffline(true)
-    window.addEventListener('online', on); window.addEventListener('offline', off)
-    setIsOffline(!navigator.onLine)
-    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
-  }, [])
-
+  useEffect(() => { const on = () => setIsOffline(false), off = () => setIsOffline(true); window.addEventListener('online', on); window.addEventListener('offline', off); setIsOffline(!navigator.onLine); return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) } }, [])
   useEffect(() => { if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => {}) } }, [])
 
   const nearestByCategory = useMemo(() => {
     if (!user || data.length === 0) return {}
     const out = {}
-    for (const key of ['police', 'ambulance', 'fire', 'hospital', 'pharmacy']) {
-      const res = findNearest(user, key, data, 3)
-      if (res && res.length > 0) out[key] = res
-    }
+    for (const key of ['police', 'ambulance', 'fire', 'hospital', 'pharmacy']) { const res = findNearest(user, key, data, 3); if (res && res.length > 0) out[key] = res }
     return out
   }, [user, data])
 
@@ -113,12 +96,7 @@ export default function App() {
   const visibleKeys = selected === 'all' ? Object.keys(nearestByCategory) : (nearestByCategory[selected] ? [selected] : [])
   const t = translations[language] || translations.en || {}
 
-  const handleEmergencyCall = (category) => {
-    const nearest = nearestByCategory[category]?.[0]
-    if (nearest) window.location.href = `tel:${nearest.phone}`
-    setShowEmergencyModal(false)
-  }
-
+  const handleEmergencyCall = (category) => { const nearest = nearestByCategory[category]?.[0]; if (nearest) window.location.href = `tel:${nearest.phone}`; setShowEmergencyModal(false) }
   const handleSmartEmergency = () => {
     if (!user || !smartEmergencyMode) { setShowEmergencyModal(true); return }
     const hospitalNearest = nearestByCategory.hospital?.[0]
@@ -135,18 +113,11 @@ export default function App() {
     if (!user) return
     const mapsUrl = `https://maps.google.com/?q=${user.lat},${user.lon}`
     const message = `My location: ${mapsUrl}`
-    const urls = {
-      whatsapp: `https://wa.me/?text=${encodeURIComponent(message)}`,
-      telegram: `https://t.me/share/url?url=${encodeURIComponent(mapsUrl)}&text=${encodeURIComponent('My location')}`,
-      sms: `sms:?body=${encodeURIComponent(message)}`,
-    }
-    try {
-      if (medium === 'sms') window.location.href = urls.sms
-      else window.open(urls[medium], '_blank')
-    } catch {
-      try { await navigator.clipboard.writeText(mapsUrl); setToastMessage(t.locationCopied || 'Location copied to clipboard'); setShowToast(true); setTimeout(() => setShowToast(false), 3000) } catch {}
-    } finally { setShowShareModal(false) }
+    const urls = { whatsapp: `https://wa.me/?text=${encodeURIComponent(message)}`, telegram: `https://t.me/share/url?url=${encodeURIComponent(mapsUrl)}&text=${encodeURIComponent('My location')}`, sms: `sms:?body=${encodeURIComponent(message)}` }
+    try { if (medium === 'sms') window.location.href = urls.sms; else window.open(urls[medium], '_blank') } catch { try { await navigator.clipboard.writeText(mapsUrl); setToastMessage(t.locationCopied || 'Location copied to clipboard'); setShowToast(true); setTimeout(() => setShowToast(false), 3000) } catch {} } finally { setShowShareModal(false) }
   }
+
+  const currentTiles = MAP_TILES[mapTheme]
 
   return (
     <div className="app">
@@ -161,17 +132,26 @@ export default function App() {
           </div>
           <div className="filters">
             {CATEGORIES.map(c => (
-              <button key={c.key} className={`filter-btn ${selected === c.key ? 'active' : ''}`} onClick={() => setSelected(c.key)} aria-label={`Filter ${t[c.label] || c.label}`}> <span>{c.emoji}</span><span>{t[c.label] || c.label}</span> </button>
+              <button key={c.key} className={`filter-btn ${selected === c.key ? 'active' : ''}`} onClick={() => setSelected(c.key)} aria-label={`Filter ${t[c.label] || c.label}`}>
+                <span>{c.emoji}</span><span>{t[c.label] || c.label}</span>
+              </button>
             ))}
           </div>
         </div>
-        <button className="language-toggle" onClick={() => setLanguage(lang => lang === 'en' ? 'am' : 'en')} aria-label="Toggle language">{language === 'en' ? 'አማርኛ' : 'English'}</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <select aria-label={t.mapTheme || 'Map Theme'} value={mapTheme} onChange={(e) => setMapTheme(e.target.value)} style={{ background: '#162036', color: '#f5f5f5', border: '1px solid #20304a', borderRadius: 8, padding: '8px 10px', minHeight: 44 }}>
+            <option value="light">{t.themeLight || 'Light'}</option>
+            <option value="carto">{t.themeCarto || 'Carto Light'}</option>
+            <option value="dark">{t.themeDark || 'Dark'}</option>
+          </select>
+          <button className="language-toggle" onClick={() => setLanguage(lang => lang === 'en' ? 'am' : 'en')} aria-label="Toggle language">{language === 'en' ? 'አማርኛ' : 'English'}</button>
+        </div>
       </div>
 
       <div className="main">
         <div className="map-wrap">
           <MapContainer center={[mapCenter.lat, mapCenter.lon]} zoom={13} style={{ height: '100%', width: '100%' }} aria-label="Map">
-            <TileLayer attribution={DARK_ATTRIB} url={DARK_TILE} />
+            <TileLayer attribution={currentTiles.attrib} url={currentTiles.url} />
             <RecenterOnUser center={user} />
             {user && (<Marker position={[user.lat, user.lon]} icon={userIcon}><Popup>{t.yourLocation || 'Your Location'}</Popup></Marker>)}
             {visibleKeys.map(key => {

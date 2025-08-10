@@ -25,7 +25,11 @@
     "shareVia": "Share via",
     "whatsapp": "WhatsApp",
     "telegram": "Telegram",
-    "sms": "SMS"
+    "sms": "SMS",
+    "mapTheme": "Map Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeCarto": "Carto Light"
   },
   "am": {
     "title": "የአስቸኳይ እርዳታ አገልግሎት",
@@ -53,6 +57,10 @@
     "shareVia": "አብራሪ መንገድ ይምረጡ",
     "whatsapp": "ዋትስአፕ",
     "telegram": "ቴሌግራም",
-    "sms": "ኤስኤምኤስ"
+    "sms": "ኤስኤምኤስ",
+    "mapTheme": "የካርታ ገጽታ",
+    "themeLight": "ብርሃን",
+    "themeDark": "ጨለማ",
+    "themeCarto": "Carto ብርሃን"
   }
 }
