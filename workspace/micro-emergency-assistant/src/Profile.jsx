@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import jsQR from 'jsqr'
 
-export default function Profile() {
+export default function Profile({ onClose }) {
   const [profile, setProfile] = useState(() => {
     const raw = localStorage.getItem('mea_profile')
     return raw ? JSON.parse(raw) : { name: '', blood: '', allergies: '', chronic: '', contact: '' }
@@ -42,9 +42,12 @@ export default function Profile() {
   }
 
   return (
-    <div className="modal-overlay profile-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay profile-modal" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Emergency ID & Health Passport</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h2 style={{ margin: 0 }}>Emergency ID & Health Passport</h2>
+          <button className="language-toggle" onClick={onClose} aria-label="Close">✕</button>
+        </div>
         <div className="profile-form">
           <label>Name<input value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} /></label>
           <label>Blood Type<input value={profile.blood} onChange={e => setProfile(p => ({ ...p, blood: e.target.value }))} /></label>

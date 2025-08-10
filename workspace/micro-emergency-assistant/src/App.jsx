@@ -269,7 +269,7 @@ export default function App() {
         </div>
       )}
 
-      {showShareModal === 'profile' && (<Profile />)}
+      {showShareModal === 'profile' && (<Profile onClose={() => setShowShareModal(false)} />)}
 
       <div className={`toast ${showToast ? 'show' : ''}`}>{toastMessage}</div>
       {error && <div style={{ padding: 12, color: '#b42318' }}>{error}</div>}
