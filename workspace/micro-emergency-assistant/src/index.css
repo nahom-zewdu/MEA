@@ -474,3 +474,40 @@ body {
     font-size: 16px;
   }
 }
+
+.share-modal .modal {
+  max-width: 360px;
+}
+
+.share-options {
+  display: grid;
+  gap: 10px;
+}
+
+.share-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.share-option:hover {
+  background: var(--surface);
+}
+
+.share-option .icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.icon.whatsapp { background: #25D366; }
+.icon.telegram { background: #229ED9; }
+.icon.sms { background: #10b981; }

@@ -85,6 +85,7 @@ export default function App() {
   const [isOffline, setIsOffline] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [showShareModal, setShowShareModal] = useState(false)
 
   // Load translations
   useEffect(() => {
@@ -141,8 +142,8 @@ export default function App() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
-        .then(registration => console.log('SW registered'))
-        .catch(err => console.log('SW registration failed'))
+        .then(() => {})
+        .catch(() => {})
     }
   }, [])
 
@@ -179,23 +180,17 @@ export default function App() {
       return
     }
 
-    // Smart logic: check proximity to different services
     const hospitalNearest = nearestByCategory.hospital?.[0]
     const fireNearest = nearestByCategory.fire?.[0]
     const policeNearest = nearestByCategory.police?.[0]
 
     let targetService = null
 
-    // If within 1km of hospital, call ambulance
     if (hospitalNearest && hospitalNearest.distanceKm <= 1) {
       targetService = nearestByCategory.ambulance?.[0]
-    }
-    // If closer to fire station than hospital, call fire
-    else if (fireNearest && hospitalNearest && fireNearest.distanceKm < hospitalNearest.distanceKm) {
+    } else if (fireNearest && hospitalNearest && fireNearest.distanceKm < hospitalNearest.distanceKm) {
       targetService = fireNearest
-    }
-    // Default to police
-    else {
+    } else {
       targetService = policeNearest
     }
 
@@ -206,36 +201,35 @@ export default function App() {
     }
   }
 
-  const shareLocation = async () => {
+  const shareVia = async (medium) => {
     if (!user) return
 
     const mapsUrl = `https://maps.google.com/?q=${user.lat},${user.lon}`
     const message = `My location: ${mapsUrl}`
 
-    // Try WhatsApp first
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-    
-    // Try Telegram
     const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(mapsUrl)}&text=${encodeURIComponent('My location')}`
+    const smsUrl = `sms:?body=${encodeURIComponent(message)}`
 
     try {
-      // Try to open WhatsApp
-      window.open(whatsappUrl, '_blank')
+      if (medium === 'whatsapp') {
+        window.open(whatsappUrl, '_blank')
+      } else if (medium === 'telegram') {
+        window.open(telegramUrl, '_blank')
+      } else if (medium === 'sms') {
+        window.location.href = smsUrl
+      }
     } catch (e) {
       try {
-        // Try Telegram
-        window.open(telegramUrl, '_blank')
-      } catch (e2) {
-        // Fallback to clipboard
-        try {
-          await navigator.clipboard.writeText(mapsUrl)
-          setToastMessage(t.locationCopied || 'Location copied to clipboard')
-          setShowToast(true)
-          setTimeout(() => setShowToast(false), 3000)
-        } catch (e3) {
-          console.error('Failed to copy to clipboard')
-        }
+        await navigator.clipboard.writeText(mapsUrl)
+        setToastMessage(t.locationCopied || 'Location copied to clipboard')
+        setShowToast(true)
+        setTimeout(() => setShowToast(false), 3000)
+      } catch {
+        // ignore
       }
+    } finally {
+      setShowShareModal(false)
     }
   }
 
@@ -377,7 +371,7 @@ export default function App() {
 
       <button 
         className="share-location-btn"
-        onClick={shareLocation}
+        onClick={() => setShowShareModal(true)}
       >
         📍 {t.shareLocation || 'Share My Location'}
       </button>
@@ -410,6 +404,28 @@ export default function App() {
                   </div>
                 )
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showShareModal && (
+        <div className="modal-overlay share-modal" onClick={() => setShowShareModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>{t.shareVia || 'Share via'}</h2>
+            <div className="share-options">
+              <div className="share-option" onClick={() => shareVia('whatsapp')}>
+                <div className="icon whatsapp">🟢</div>
+                <div>{t.whatsapp || 'WhatsApp'}</div>
+              </div>
+              <div className="share-option" onClick={() => shareVia('telegram')}>
+                <div className="icon telegram">📨</div>
+                <div>{t.telegram || 'Telegram'}</div>
+              </div>
+              <div className="share-option" onClick={() => shareVia('sms')}>
+                <div className="icon sms">✉️</div>
+                <div>{t.sms || 'SMS'}</div>
+              </div>
             </div>
           </div>
         </div>

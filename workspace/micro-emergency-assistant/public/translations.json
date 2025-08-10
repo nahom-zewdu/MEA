@@ -21,7 +21,11 @@
     "shareLocation": "Share My Location",
     "locationCopied": "Location copied to clipboard",
     "top3Services": "Top 3 Services",
-    "eta": "ETA"
+    "eta": "ETA",
+    "shareVia": "Share via",
+    "whatsapp": "WhatsApp",
+    "telegram": "Telegram",
+    "sms": "SMS"
   },
   "am": {
     "title": "የአስቸኳይ እርዳታ አገልግሎት",
@@ -45,6 +49,10 @@
     "shareLocation": "አካባቢዬን አጋራ",
     "locationCopied": "አካባቢ ወደ ክሊፕቦርድ ተገልብጧል",
     "top3Services": "የመጀመሪያ 3 አገልግሎቶች",
-    "eta": "የመድረሻ ጊዜ"
+    "eta": "የመድረሻ ጊዜ",
+    "shareVia": "አብራሪ መንገድ ይምረጡ",
+    "whatsapp": "ዋትስአፕ",
+    "telegram": "ቴሌግራም",
+    "sms": "ኤስኤምኤስ"
   }
 }
