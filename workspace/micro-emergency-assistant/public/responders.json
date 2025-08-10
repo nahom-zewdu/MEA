@@ -1,0 +1,5 @@
+[
+  { "id": 1, "name": "Abebe Solomon", "skill": "First Aid", "lat": 9.0180, "lon": 38.7540 },
+  { "id": 2, "name": "Hanna Bekele", "skill": "Nurse", "lat": 9.0155, "lon": 38.7605 },
+  { "id": 3, "name": "Yonas Alemu", "skill": "Fire Volunteer", "lat": 9.0121, "lon": 38.7480 }
+]

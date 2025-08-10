@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import Profile from './Profile'
 
 const MAP_TILES = {
   light: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attrib: '&copy; OpenStreetMap contributors' },
@@ -47,6 +48,14 @@ export default function App() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [mapTheme, setMapTheme] = useState('light')
 
+  // Panic/Tracking state
+  const [isPanic, setIsPanic] = useState(false)
+  const trackingTimerRef = useRef(null)
+  const [responders, setResponders] = useState([])
+  const [responderPositions, setResponderPositions] = useState([])
+  const [responderAccepted, setResponderAccepted] = useState(false)
+  const emergencyBtnPressRef = useRef({ count: 0, last: 0, longPress: null })
+
   useEffect(() => { fetch('/translations.json').then(r => r.json()).then(setTranslations).catch(() => {}) }, [])
   useEffect(() => { fetch('/emergency_data.json').then(r => r.json()).then(setData).catch(() => setError('Failed to load emergency data')) }, [])
   useEffect(() => { if (!('geolocation' in navigator)) { setUser(ADDIS_FALLBACK); return } navigator.geolocation.getCurrentPosition(pos => setUser({ lat: pos.coords.latitude, lon: pos.coords.longitude }), () => setUser(ADDIS_FALLBACK), { enableHighAccuracy: true, maximumAge: 10_000, timeout: 10_000 }) }, [])
@@ -59,11 +68,68 @@ export default function App() {
   const visibleKeys = selected === 'all' ? Object.keys(nearestByCategory) : (nearestByCategory[selected] ? [selected] : [])
   const t = translations[language] || translations.en || {}
 
+  const showToastMsg = (msg) => { setToastMessage(msg); setShowToast(true); setTimeout(() => setShowToast(false), 3000) }
+
+  const startPanicMode = async () => {
+    if (isPanic) return
+    setIsPanic(true)
+    showToastMsg('Alert sent to 3 contacts & local authorities')
+    // Load mock responders
+    try {
+      const res = await fetch('/responders.json')
+      const list = await res.json()
+      setResponders(list)
+      // Initialize positions
+      setResponderPositions(list.map(r => ({ id: r.id, lat: r.lat, lon: r.lon })))
+    } catch {}
+    // Simulate GPS sending and movement every 5s
+    trackingTimerRef.current = setInterval(() => {
+      if (!user) return
+      // Mock slight jitter in user location
+      setUser(prev => prev ? { lat: prev.lat + (Math.random()-0.5)*0.0005, lon: prev.lon + (Math.random()-0.5)*0.0005 } : prev)
+      // Mock POST to endpoint (no-op)
+      fetch('/mock-track', { method: 'POST', body: JSON.stringify({ ts: Date.now(), user }) }).catch(() => {})
+      // Move responders closer to user
+      setResponderPositions(prev => prev.map(p => {
+        if (!user) return p
+        const step = 0.0006
+        const dLat = user.lat - p.lat
+        const dLon = user.lon - p.lon
+        const dist = Math.hypot(dLat, dLon)
+        if (dist < 0.0008) return p // close enough
+        return { ...p, lat: p.lat + (dLat/dist)*step, lon: p.lon + (dLon/dist)*step }
+      }))
+    }, 5000)
+    // After 5s, show acceptance once
+    setTimeout(() => setResponderAccepted(true), 5000)
+  }
+
+  const stopPanicMode = () => {
+    setIsPanic(false)
+    setResponderAccepted(false)
+    if (trackingTimerRef.current) clearInterval(trackingTimerRef.current)
+    trackingTimerRef.current = null
+  }
+
   const handleEmergencyCall = (category) => { const nearest = nearestByCategory[category]?.[0]; if (nearest) window.location.href = `tel:${nearest.phone}`; setShowEmergencyModal(false) }
   const handleSmartEmergency = () => { if (!user || !smartEmergencyMode) { setShowEmergencyModal(true); return } const hospitalNearest = nearestByCategory.hospital?.[0]; const fireNearest = nearestByCategory.fire?.[0]; const policeNearest = nearestByCategory.police?.[0]; let targetService = null; if (hospitalNearest && hospitalNearest.distanceKm <= 1) targetService = nearestByCategory.ambulance?.[0]; else if (fireNearest && hospitalNearest && fireNearest.distanceKm < hospitalNearest.distanceKm) targetService = fireNearest; else targetService = policeNearest; if (targetService) window.location.href = `tel:${targetService.phone}`; else setShowEmergencyModal(true) }
-  const shareVia = async (medium) => { if (!user) return; const mapsUrl = `https://maps.google.com/?q=${user.lat},${user.lon}`; const message = `My location: ${mapsUrl}`; const urls = { whatsapp: `https://wa.me/?text=${encodeURIComponent(message)}`, telegram: `https://t.me/share/url?url=${encodeURIComponent(mapsUrl)}&text=${encodeURIComponent('My location')}`, sms: `sms:?body=${encodeURIComponent(message)}` }; try { if (medium === 'sms') window.location.href = urls.sms; else window.open(urls[medium], '_blank') } catch { try { await navigator.clipboard.writeText(mapsUrl); setToastMessage(t.locationCopied || 'Location copied to clipboard'); setShowToast(true); setTimeout(() => setShowToast(false), 3000) } catch {} } finally { setShowShareModal(false) } }
+  const shareVia = async (medium) => { if (!user) return; const mapsUrl = `https://maps.google.com/?q=${user.lat},${user.lon}`; const message = `My location: ${mapsUrl}`; const urls = { whatsapp: `https://wa.me/?text=${encodeURIComponent(message)}`, telegram: `https://t.me/share/url?url=${encodeURIComponent(mapsUrl)}&text=${encodeURIComponent('My location')}`, sms: `sms:?body=${encodeURIComponent(message)}` }; try { if (medium === 'sms') window.location.href = urls.sms; else window.open(urls[medium], '_blank') } catch { try { await navigator.clipboard.writeText(mapsUrl); showToastMsg(t.locationCopied || 'Location copied to clipboard') } catch {} } finally { setShowShareModal(false) } }
 
   const currentTiles = MAP_TILES[mapTheme]
+
+  const emergencyPressStart = () => {
+    const now = Date.now()
+    if (now - emergencyBtnPressRef.current.last < 400) {
+      emergencyBtnPressRef.current.count += 1
+      if (emergencyBtnPressRef.current.count >= 2) startPanicMode()
+    } else {
+      emergencyBtnPressRef.current.count = 1
+    }
+    emergencyBtnPressRef.current.last = now
+    // long press
+    emergencyBtnPressRef.current.longPress = setTimeout(() => startPanicMode(), 800)
+  }
+  const emergencyPressEnd = () => { if (emergencyBtnPressRef.current.longPress) { clearTimeout(emergencyBtnPressRef.current.longPress); emergencyBtnPressRef.current.longPress = null } }
 
   return (
     <div className="app">
@@ -85,6 +151,7 @@ export default function App() {
           </div>
         </div>
         <button className="language-toggle" onClick={() => setLanguage(lang => lang === 'en' ? 'am' : 'en')} aria-label="Toggle language">{language === 'en' ? 'አማርኛ' : 'English'}</button>
+        <button className="language-toggle" style={{ marginLeft: 8 }} onClick={() => setShowShareModal('profile')} aria-label="Profile">ID</button>
       </div>
 
       <div className="main">
@@ -106,6 +173,12 @@ export default function App() {
                 </Popup>
               </Marker>
             )) })}
+            {/* Responder moving markers */}
+            {isPanic && responderPositions.map(p => (
+              <Marker key={`resp-${p.id}`} position={[p.lat, p.lon]} icon={toDivIcon('police', '🚨')}>
+                <Popup>Responder #{p.id}</Popup>
+              </Marker>
+            ))}
           </MapContainer>
 
           {/* Map overlay controls: theme selector */}
@@ -117,7 +190,12 @@ export default function App() {
             </select>
           </div>
 
-          <button className="emergency-btn" onClick={handleSmartEmergency} aria-label={t.emergency || 'Emergency'}>{t.emergency || 'EMERGENCY'}</button>
+          <button className="emergency-btn" onMouseDown={emergencyPressStart} onMouseUp={emergencyPressEnd} onTouchStart={emergencyPressStart} onTouchEnd={emergencyPressEnd} onClick={() => {/* normal emergency flow */}} aria-label={t.emergency || 'Emergency'}>{t.emergency || 'EMERGENCY'}</button>
+
+          {/* Tracking banner */}
+          {isPanic && (
+            <div className="tracking-banner" onClick={stopPanicMode}>Tracking active • tap to stop</div>
+          )}
         </div>
 
         <div className="list" aria-label="Services list">
@@ -146,6 +224,35 @@ export default function App() {
       </div>
 
       <button className="share-location-btn" onClick={() => setShowShareModal(true)} aria-label={t.shareLocation || 'Share My Location'}>📍 {t.shareLocation || 'Share My Location'}</button>
+
+      {/* Responders side panel */}
+      {isPanic && (
+        <div className={`responders-panel show`}>
+          <div className="responders-header">
+            <span>Nearby Responders</span>
+            <button className="language-toggle" onClick={stopPanicMode}>Stop</button>
+          </div>
+          <div className="responders-list">
+            {responders.map(r => {
+              const pos = responderPositions.find(p => p.id === r.id) || { lat: r.lat, lon: r.lon }
+              const d = user ? haversineKm(user, { lat: pos.lat, lon: pos.lon }) : 0
+              const eta = calculateETA(d, 'driving')
+              return (
+                <div key={r.id} className="responder-card">
+                  <div>
+                    <div className="name">{r.name}</div>
+                    <div className="meta"><span className="skill-badge">{r.skill}</span> • {d.toFixed(1)} km • ~{eta} min</div>
+                  </div>
+                  <div>🚨</div>
+                </div>
+              )
+            })}
+          </div>
+          {responderAccepted && (
+            <div style={{ padding: 12, color: '#32CD32', fontWeight: 800, textAlign: 'center' }}>Responder accepted your call</div>
+          )}
+        </div>
+      )}
 
       {showEmergencyModal && (
         <div className="modal-overlay" onClick={() => setShowEmergencyModal(false)}>
@@ -177,6 +284,10 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {showShareModal === 'profile' && (
+        <Profile />
       )}
 
       <div className={`toast ${showToast ? 'show' : ''}`}>{toastMessage}</div>
