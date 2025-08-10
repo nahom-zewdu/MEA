@@ -197,7 +197,7 @@ export default function App() {
       <button className="share-location-btn" onClick={() => setShowShareModal(true)} aria-label={t.shareLocation || 'Share My Location'}>📍 {t.shareLocation || 'Share My Location'}</button>
 
       {isPanic && (
-        <div className={`responders-panel show`}>
+        <div className={`responders-panel show`} style={{ position: 'fixed', top: 0, right: 0, height: '100dvh', width: 'min(360px, 90vw)', zIndex: 2000 }}>
           <div className="responders-header">
             <div className="tab-bar">
               <button className={`tab-btn ${sidePanelTab === 'responders' ? 'active' : ''}`} onClick={() => setSidePanelTab('responders')}>Responders</button>

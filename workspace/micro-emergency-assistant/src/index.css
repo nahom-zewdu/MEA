@@ -429,4 +429,11 @@ body {
 .tab-bar { display: flex; gap: 8px; }
 .tab-btn { background: #162036; color: #f5f5f5; border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; font-weight: 800; }
 .tab-btn.active { background: #203052; border-color: var(--primary); }
+.responders-panel { position: fixed; top: 0; right: 0; height: 100dvh; width: min(360px, 90vw); background: #0f1728; border-left: 1px solid var(--border); box-shadow: -6px 0 18px rgba(0,0,0,0.4); z-index: 2000; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.25s ease; }
+.responders-panel.show { transform: translateX(0%); }
+.responders-header { padding: 14px; border-bottom: 1px solid var(--border); font-weight: 900; display: flex; justify-content: space-between; align-items: center; background: #0c1424; }
+.responders-list { overflow: auto; padding: 12px; display: grid; gap: 10px; }
+.responder-card { background: #0c1424; border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.responder-card .name { font-weight: 800; }
+.skill-badge { background: #162036; color: #f5f5f5; border: 1px solid var(--border); padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; }
 .responders-content { display: flex; flex-direction: column; height: calc(100% - 56px); }
