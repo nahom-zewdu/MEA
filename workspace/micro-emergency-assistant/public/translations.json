@@ -1,0 +1,34 @@
+{
+  "en": {
+    "title": "Micro Emergency Assistant",
+    "all": "All",
+    "police": "Police",
+    "ambulance": "Ambulance",
+    "fire": "Fire Station",
+    "hospital": "Hospital",
+    "pharmacy": "Pharmacy",
+    "emergency": "EMERGENCY",
+    "yourLocation": "Your Location",
+    "kmAway": "km away",
+    "call": "Call",
+    "noServices": "No services available.",
+    "selectEmergency": "Select Emergency Service",
+    "nearestService": "Nearest Service"
+  },
+  "am": {
+    "title": "የአስቸኳይ እርዳታ አገልግሎት",
+    "all": "ሁሉም",
+    "police": "ፖሊስ",
+    "ambulance": "አምቡላንስ",
+    "fire": "የእሳት ማጥፊያ",
+    "hospital": "ሆስፒታል",
+    "pharmacy": "ፋርማሲ",
+    "emergency": "አደጋ",
+    "yourLocation": "የእርስዎ አካባቢ",
+    "kmAway": "ኪሎሜትር ርቀት",
+    "call": "ይደውሉ",
+    "noServices": "ምንም አገልግሎት አይገኝም።",
+    "selectEmergency": "የአደጋ አገልግሎት ይምረጡ",
+    "nearestService": "የቅርብ አገልግሎት"
+  }
+}
