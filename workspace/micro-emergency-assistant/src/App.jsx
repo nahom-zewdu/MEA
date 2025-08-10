@@ -54,6 +54,7 @@ export default function App() {
   const [responders, setResponders] = useState([])
   const [responderPositions, setResponderPositions] = useState([])
   const [responderAccepted, setResponderAccepted] = useState(false)
+  const [sidePanelTab, setSidePanelTab] = useState('responders')
   const emergencyBtnPressRef = useRef({ count: 0, last: 0, longPress: null })
 
   useEffect(() => { fetch('/translations.json').then(r => r.json()).then(setTranslations).catch(() => {}) }, [])
@@ -73,43 +74,32 @@ export default function App() {
   const startPanicMode = async () => {
     if (isPanic) return
     setIsPanic(true)
+    setSidePanelTab('responders')
     showToastMsg('Alert sent to 3 contacts & local authorities')
-    // Load mock responders
     try {
       const res = await fetch('/responders.json')
       const list = await res.json()
       setResponders(list)
-      // Initialize positions
       setResponderPositions(list.map(r => ({ id: r.id, lat: r.lat, lon: r.lon })))
     } catch {}
-    // Simulate GPS sending and movement every 5s
     trackingTimerRef.current = setInterval(() => {
       if (!user) return
-      // Mock slight jitter in user location
       setUser(prev => prev ? { lat: prev.lat + (Math.random()-0.5)*0.0005, lon: prev.lon + (Math.random()-0.5)*0.0005 } : prev)
-      // Mock POST to endpoint (no-op)
       fetch('/mock-track', { method: 'POST', body: JSON.stringify({ ts: Date.now(), user }) }).catch(() => {})
-      // Move responders closer to user
       setResponderPositions(prev => prev.map(p => {
         if (!user) return p
         const step = 0.0006
         const dLat = user.lat - p.lat
         const dLon = user.lon - p.lon
         const dist = Math.hypot(dLat, dLon)
-        if (dist < 0.0008) return p // close enough
+        if (dist < 0.0008) return p
         return { ...p, lat: p.lat + (dLat/dist)*step, lon: p.lon + (dLon/dist)*step }
       }))
     }, 5000)
-    // After 5s, show acceptance once
     setTimeout(() => setResponderAccepted(true), 5000)
   }
 
-  const stopPanicMode = () => {
-    setIsPanic(false)
-    setResponderAccepted(false)
-    if (trackingTimerRef.current) clearInterval(trackingTimerRef.current)
-    trackingTimerRef.current = null
-  }
+  const stopPanicMode = () => { setIsPanic(false); setResponderAccepted(false); if (trackingTimerRef.current) clearInterval(trackingTimerRef.current); trackingTimerRef.current = null }
 
   const handleEmergencyCall = (category) => { const nearest = nearestByCategory[category]?.[0]; if (nearest) window.location.href = `tel:${nearest.phone}`; setShowEmergencyModal(false) }
   const handleSmartEmergency = () => { if (!user || !smartEmergencyMode) { setShowEmergencyModal(true); return } const hospitalNearest = nearestByCategory.hospital?.[0]; const fireNearest = nearestByCategory.fire?.[0]; const policeNearest = nearestByCategory.police?.[0]; let targetService = null; if (hospitalNearest && hospitalNearest.distanceKm <= 1) targetService = nearestByCategory.ambulance?.[0]; else if (fireNearest && hospitalNearest && fireNearest.distanceKm < hospitalNearest.distanceKm) targetService = fireNearest; else targetService = policeNearest; if (targetService) window.location.href = `tel:${targetService.phone}`; else setShowEmergencyModal(true) }
@@ -117,18 +107,7 @@ export default function App() {
 
   const currentTiles = MAP_TILES[mapTheme]
 
-  const emergencyPressStart = () => {
-    const now = Date.now()
-    if (now - emergencyBtnPressRef.current.last < 400) {
-      emergencyBtnPressRef.current.count += 1
-      if (emergencyBtnPressRef.current.count >= 2) startPanicMode()
-    } else {
-      emergencyBtnPressRef.current.count = 1
-    }
-    emergencyBtnPressRef.current.last = now
-    // long press
-    emergencyBtnPressRef.current.longPress = setTimeout(() => startPanicMode(), 800)
-  }
+  const emergencyPressStart = () => { const now = Date.now(); if (now - emergencyBtnPressRef.current.last < 400) { emergencyBtnPressRef.current.count += 1; if (emergencyBtnPressRef.current.count >= 2) startPanicMode() } else { emergencyBtnPressRef.current.count = 1 } emergencyBtnPressRef.current.last = now; emergencyBtnPressRef.current.longPress = setTimeout(() => startPanicMode(), 800) }
   const emergencyPressEnd = () => { if (emergencyBtnPressRef.current.longPress) { clearTimeout(emergencyBtnPressRef.current.longPress); emergencyBtnPressRef.current.longPress = null } }
 
   return (
@@ -173,15 +152,11 @@ export default function App() {
                 </Popup>
               </Marker>
             )) })}
-            {/* Responder moving markers */}
             {isPanic && responderPositions.map(p => (
-              <Marker key={`resp-${p.id}`} position={[p.lat, p.lon]} icon={toDivIcon('police', '🚨')}>
-                <Popup>Responder #{p.id}</Popup>
-              </Marker>
+              <Marker key={`resp-${p.id}`} position={[p.lat, p.lon]} icon={toDivIcon('police', '🚨')}><Popup>Responder #{p.id}</Popup></Marker>
             ))}
           </MapContainer>
 
-          {/* Map overlay controls: theme selector */}
           <div className="map-controls" aria-label={t.mapTheme || 'Map Theme'}>
             <select value={mapTheme} onChange={(e) => setMapTheme(e.target.value)} aria-label={t.mapTheme || 'Map Theme'}>
               <option value="light">{t.themeLight || 'Light'}</option>
@@ -190,12 +165,8 @@ export default function App() {
             </select>
           </div>
 
-          <button className="emergency-btn" onMouseDown={emergencyPressStart} onMouseUp={emergencyPressEnd} onTouchStart={emergencyPressStart} onTouchEnd={emergencyPressEnd} onClick={() => {/* normal emergency flow */}} aria-label={t.emergency || 'Emergency'}>{t.emergency || 'EMERGENCY'}</button>
-
-          {/* Tracking banner */}
-          {isPanic && (
-            <div className="tracking-banner" onClick={stopPanicMode}>Tracking active • tap to stop</div>
-          )}
+          <button className="emergency-btn" onMouseDown={emergencyPressStart} onMouseUp={emergencyPressEnd} onTouchStart={emergencyPressStart} onTouchEnd={emergencyPressEnd} aria-label={t.emergency || 'Emergency'}>{t.emergency || 'EMERGENCY'}</button>
+          {isPanic && (<div className="tracking-banner" onClick={stopPanicMode}>Tracking active • tap to stop</div>)}
         </div>
 
         <div className="list" aria-label="Services list">
@@ -225,32 +196,44 @@ export default function App() {
 
       <button className="share-location-btn" onClick={() => setShowShareModal(true)} aria-label={t.shareLocation || 'Share My Location'}>📍 {t.shareLocation || 'Share My Location'}</button>
 
-      {/* Responders side panel */}
       {isPanic && (
         <div className={`responders-panel show`}>
           <div className="responders-header">
-            <span>Nearby Responders</span>
+            <div className="tab-bar">
+              <button className={`tab-btn ${sidePanelTab === 'responders' ? 'active' : ''}`} onClick={() => setSidePanelTab('responders')}>Responders</button>
+              <button className={`tab-btn ${sidePanelTab === 'services' ? 'active' : ''}`} onClick={() => setSidePanelTab('services')}>Services</button>
+            </div>
             <button className="language-toggle" onClick={stopPanicMode}>Stop</button>
           </div>
-          <div className="responders-list">
-            {responders.map(r => {
-              const pos = responderPositions.find(p => p.id === r.id) || { lat: r.lat, lon: r.lon }
-              const d = user ? haversineKm(user, { lat: pos.lat, lon: pos.lon }) : 0
-              const eta = calculateETA(d, 'driving')
-              return (
-                <div key={r.id} className="responder-card">
-                  <div>
-                    <div className="name">{r.name}</div>
-                    <div className="meta"><span className="skill-badge">{r.skill}</span> • {d.toFixed(1)} km • ~{eta} min</div>
+          <div className="responders-content">
+            {sidePanelTab === 'responders' && (
+              <div className="responders-list">
+                {responders.map(r => { const pos = responderPositions.find(p => p.id === r.id) || { lat: r.lat, lon: r.lon }; const d = user ? haversineKm(user, { lat: pos.lat, lon: pos.lon }) : 0; const eta = calculateETA(d, 'driving'); return (
+                  <div key={r.id} className="responder-card">
+                    <div>
+                      <div className="name">{r.name}</div>
+                      <div className="meta"><span className="skill-badge">{r.skill}</span> • {d.toFixed(1)} km • ~{eta} min</div>
+                    </div>
+                    <div>🚨</div>
                   </div>
-                  <div>🚨</div>
-                </div>
-              )
-            })}
+                ) })}
+                {responderAccepted && (<div style={{ padding: 12, color: '#32CD32', fontWeight: 800, textAlign: 'center' }}>Responder accepted your call</div>)}
+              </div>
+            )}
+            {sidePanelTab === 'services' && (
+              <div className="responders-list">
+                {Object.keys(nearestByCategory).map(key => { const services = nearestByCategory[key]; if (!services) return null; const category = CATEGORIES.find(c => c.key === key); return (
+                  <div className="responder-card" key={`sp-${key}`}>
+                    <div>
+                      <div className="name"><span className={`skill-badge`}>{category?.emoji}</span> {t[key] || key.toUpperCase()}</div>
+                      <div className="meta">Top {services.length} nearby</div>
+                    </div>
+                    <div></div>
+                  </div>
+                ) })}
+              </div>
+            )}
           </div>
-          {responderAccepted && (
-            <div style={{ padding: 12, color: '#32CD32', fontWeight: 800, textAlign: 'center' }}>Responder accepted your call</div>
-          )}
         </div>
       )}
 
@@ -286,9 +269,7 @@ export default function App() {
         </div>
       )}
 
-      {showShareModal === 'profile' && (
-        <Profile />
-      )}
+      {showShareModal === 'profile' && (<Profile />)}
 
       <div className={`toast ${showToast ? 'show' : ''}`}>{toastMessage}</div>
       {error && <div style={{ padding: 12, color: '#b42318' }}>{error}</div>}
