@@ -6,6 +6,13 @@
   --primary-contrast: #ffffff;
   --surface: #f2f4f7;
   --border: #e4e7ec;
+  
+  /* Category colors */
+  --police-color: #2563eb;
+  --ambulance-color: #dc2626;
+  --fire-color: #ea580c;
+  --hospital-color: #059669;
+  --pharmacy-color: #16a34a;
 }
 
 * {
@@ -29,12 +36,20 @@ body {
   height: 100dvh;
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;
 }
 
 .header {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-left {
+  flex: 1;
 }
 
 .title {
@@ -56,12 +71,31 @@ body {
   background: #fff;
   color: var(--fg);
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .filter-btn.active {
   background: var(--primary);
   color: var(--primary-contrast);
   border-color: var(--primary);
+}
+
+.language-toggle {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.language-toggle:hover {
+  background: var(--surface);
 }
 
 .main {
@@ -75,6 +109,7 @@ body {
   height: 60%;
   min-height: 260px;
   border-bottom: 1px solid var(--border);
+  position: relative;
 }
 
 .list {
@@ -104,6 +139,9 @@ body {
 .card h3 {
   margin: 0 0 6px;
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .card .meta {
@@ -124,6 +162,129 @@ body {
 
 .call-btn:active { transform: translateY(1px); }
 
+/* Category badges */
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+.category-badge.police { background: var(--police-color); }
+.category-badge.ambulance { background: var(--ambulance-color); }
+.category-badge.fire { background: var(--fire-color); }
+.category-badge.hospital { background: var(--hospital-color); }
+.category-badge.pharmacy { background: var(--pharmacy-color); }
+
+/* Emergency button */
+.emergency-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: white;
+  border: none;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.emergency-btn:hover {
+  background: #b91c1c;
+  transform: scale(1.05);
+}
+
+.emergency-btn:active {
+  transform: scale(0.95);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal h2 {
+  margin: 0 0 20px;
+  text-align: center;
+  font-size: 20px;
+}
+
+.emergency-options {
+  display: grid;
+  gap: 12px;
+}
+
+.emergency-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.emergency-option:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+}
+
+.emergency-option-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: white;
+}
+
+.emergency-option-icon.police { background: var(--police-color); }
+.emergency-option-icon.ambulance { background: var(--ambulance-color); }
+.emergency-option-icon.fire { background: var(--fire-color); }
+.emergency-option-icon.hospital { background: var(--hospital-color); }
+.emergency-option-icon.pharmacy { background: var(--pharmacy-color); }
+
+.emergency-option-text {
+  flex: 1;
+  font-weight: 600;
+}
+
 /* Map marker styles using DivIcon */
 .marker {
   width: 30px;
@@ -136,10 +297,19 @@ body {
   font-size: 16px;
 }
 .marker.user { background: #0d6efd; color: #fff; }
-.marker.service { background: #d92d20; color: #fff; }
+.marker.police { background: var(--police-color); color: #fff; }
+.marker.ambulance { background: var(--ambulance-color); color: #fff; }
+.marker.fire { background: var(--fire-color); color: #fff; }
+.marker.hospital { background: var(--hospital-color); color: #fff; }
+.marker.pharmacy { background: var(--pharmacy-color); color: #fff; }
 
 /* Desktop tweaks */
 @media (min-width: 900px) {
   .map-wrap { height: 65%; }
   .cards { grid-template-columns: repeat(2, 1fr); }
+  .emergency-btn {
+    width: 90px;
+    height: 90px;
+    font-size: 14px;
+  }
 }
